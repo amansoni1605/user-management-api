@@ -3,7 +3,7 @@ import axios from "axios";
 import { Form, Button, Alert, Container, Spinner } from "react-bootstrap";
 
 const MyAccount = () => {
-  const [user, setUser] = useState({ username: "", email: "", wallet: 0, user_id: 0 });
+  const [user, setUser] = useState({ username: "", email: "", wallet: 0, user_id: 0, referral_code: "", mobile_number: "" });
   const [successMessage, setSuccessMessage] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
   const [loading, setLoading] = useState(true);
@@ -60,6 +60,7 @@ const MyAccount = () => {
       </Container>
     );
   }
+
   return (
     <Container className="mt-4">
       <h2>My Account</h2>
@@ -81,21 +82,22 @@ const MyAccount = () => {
           />
         </Form.Group>
 
-        <Form.Group controlId="formWallet" className="mt-3">
-          <Form.Label>Wallet Balance</Form.Label>
-          <Form.Control
-            type="text"
-            value={`$${user.wallet.toFixed(2)}`}
-            readOnly
-          />
+        <Form.Group controlId="formMobileNumber" className="mt-3">
+          <Form.Label>Mobile Number</Form.Label>
+          <Form.Control type="text" value={user.mobile_number} readOnly />
         </Form.Group>
 
-        <Button
-          variant="primary"
-          onClick={handleSaveChanges}
-          className="mt-3"
-          disabled={saving}
-        >
+        <Form.Group controlId="formWallet" className="mt-3">
+          <Form.Label>Wallet Balance</Form.Label>
+          <Form.Control type="text" value={`$${user.wallet.toFixed(2)}`} readOnly />
+        </Form.Group>
+
+        <Form.Group controlId="formReferralCode" className="mt-3">
+          <Form.Label>Referral Code</Form.Label>
+          <Form.Control type="text" value={user.referral_code} readOnly />
+        </Form.Group>
+
+        <Button variant="primary" onClick={handleSaveChanges} className="mt-3" disabled={saving}>
           {saving ? <Spinner animation="border" size="sm" /> : "Save Changes"}
         </Button>
       </Form>

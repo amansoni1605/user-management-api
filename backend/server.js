@@ -24,82 +24,125 @@ const generateToken = (id) => {
   return jwt.sign({ id }, process.env.JWT_SECRET, { expiresIn: "1h" });
 };
 
-// Sign-up endpoint
-const generateUserId = async () => {
-    let userId;
-    let isUnique = false;
-  
-    // Generate a unique 6-digit ID
-    while (!isUnique) {
-      userId = Math.floor(100000 + Math.random() * 900000).toString();
-      const existingUser = await pool.query("SELECT * FROM users WHERE user_id = $1", [userId]);
-      if (existingUser.rows.length === 0) {
-        isUnique = true; // Exit loop if user_id is unique
-      }
+// Helper function to generate a unique 6-character referral code
+const generateReferralCode = async () => {
+  let referralCode;
+  let isUnique = false;
+
+  while (!isUnique) {
+    referralCode = Math.random().toString(36).substring(2, 8).toUpperCase(); // 6-character code
+    const existingCode = await pool.query("SELECT * FROM users WHERE referral_code = $1", [referralCode]);
+    if (existingCode.rows.length === 0) {
+      isUnique = true;
     }
-    return userId;
-  };
+  }
+  return referralCode;
+};
+
+// Helper function to generate a unique 6-digit user ID
+const generateUserId = async () => {
+  let userId;
+  let isUnique = false;
+
+  while (!isUnique) {
+    userId = Math.floor(100000 + Math.random() * 900000).toString(); // 6-digit user ID
+    const existingUser = await pool.query("SELECT * FROM users WHERE user_id = $1", [userId]);
+    if (existingUser.rows.length === 0) {
+      isUnique = true;
+    }
+  }
+  return userId;
+};
+
+// Sign-up endpoint
+// Sign-up endpoint
+app.post("/signup", async (req, res) => {
+    const { username, email, password, mobile_number, referral_code } = req.body;
   
-  // Sign-up endpoint
-  app.post("/signup", async (req, res) => {
-    const { username, email, password } = req.body;
-  
-    if (!username || !email || !password) {
+    if (!username || !email || !password || !mobile_number || !referral_code) {
       return res.status(400).json({ message: "All fields are required" });
     }
   
     try {
-      // Check if email is already registered
-      const existingUser = await pool.query("SELECT * FROM users WHERE email = $1", [email]);
-      if (existingUser.rows.length > 0) {
-        return res.status(409).json({ message: "Email is already registered" });
+      // Normalize email to lowercase before storing
+      const normalizedEmail = email.trim().toLowerCase();
+  
+      // Check if the referral code exists
+      const referrer = await pool.query("SELECT * FROM users WHERE referral_code = $1", [referral_code]);
+      if (referrer.rows.length === 0) {
+        return res.status(400).json({ message: "Invalid referral code" });
       }
   
-      // Hash the password and generate a unique 6-digit user_id
+      // Check if email or mobile_number is already registered
+      const existingUser = await pool.query(
+        "SELECT * FROM users WHERE email = $1 OR mobile_number = $2",
+        [normalizedEmail, mobile_number]
+      );
+      if (existingUser.rows.length > 0) {
+        return res.status(409).json({ message: "Email or mobile number is already registered" });
+      }
+  
+      // Hash the password and create a referral code
       const hashedPassword = await bcrypt.hash(password, 10);
       const userId = await generateUserId();
+      const newReferralCode = await generateReferralCode();
   
-      // Insert new user into the database
+      // Insert new user with normalized email
       const newUser = await pool.query(
-        "INSERT INTO users (username, email, password, user_id) VALUES ($1, $2, $3, $4) RETURNING *",
-        [username, email, hashedPassword, userId]
+        "INSERT INTO users (username, email, password, user_id, mobile_number, referral_code, referred_by) VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *",
+        [username, normalizedEmail, hashedPassword, userId, mobile_number, newReferralCode, referral_code]
       );
   
       const token = generateToken(newUser.rows[0].id);
-  
-      // Log successful user creation
-      console.log("New user created:", newUser.rows[0]);
-      res.json({ token, user: newUser.rows[0] }); // Return the token and user details
+      res.json({ token, user: newUser.rows[0] });
     } catch (error) {
-      console.error("Error creating user:", error); // Log any errors
+      console.error("Error creating user:", error);
       res.status(500).json({ message: "Error creating user" });
     }
   });
-
+  
+// Login endpoint
 // Login endpoint
 app.post("/login", async (req, res) => {
-  const { email, password } = req.body;
-
-  if (!email || !password) {
-    return res.status(400).json({ message: "All fields are required" });
-  }
-
-  try {
-    const user = await pool.query("SELECT * FROM users WHERE email = $1", [email]);
-    if (!user.rows.length) {
-      return res.status(404).json({ message: "User not found" });
+    const { mobile_number, password } = req.body;
+  
+    if (!mobile_number || !password) {
+      return res.status(400).json({ message: "Mobile number and password are required" });
     }
-
-    const validPassword = await bcrypt.compare(password, user.rows[0].password);
-    if (!validPassword) return res.status(400).json({ message: "Invalid credentials" });
-
-    const token = generateToken(user.rows[0].id);
-    res.json({ token, user: user.rows[0] });
-  } catch (error) {
-    console.error("Error logging in:", error);
-    res.status(500).json({ message: "Error logging in" });
-  }
-});
+  
+    try {
+      console.log("Attempting login with mobile number:", mobile_number.trim());
+  
+      // Find the user by mobile number
+      const user = await pool.query("SELECT * FROM users WHERE mobile_number = $1", [mobile_number.trim()]);
+  
+      // If user is not found
+      if (!user || user.rows.length === 0) {
+        console.log("User not found with provided mobile number.");
+        return res.status(404).json({ message: "User not found" });
+      }
+  
+      // Verify the password
+      const validPassword = await bcrypt.compare(password, user.rows[0].password);
+      if (!validPassword) {
+        console.log("Invalid password provided.");
+        return res.status(400).json({ message: "Invalid credentials" });
+      }
+  
+      // Generate token if login is successful
+      const token = generateToken(user.rows[0].id);
+      console.log("Login successful for user:", user.rows[0]);
+      res.json({ token, user: user.rows[0] });
+    } catch (error) {
+      console.error("Error logging in:", error);
+      res.status(500).json({ message: "Error logging in" });
+    }
+  });
+  
+  
+  
+  
+  
 
 // Middleware to verify admin access
 const verifyAdmin = async (req, res, next) => {
@@ -123,8 +166,10 @@ const verifyAdmin = async (req, res, next) => {
 // Admin route to fetch all users
 app.get("/admin/users", verifyAdmin, async (req, res) => {
     try {
-      const users = await pool.query("SELECT id, username, email, isadmin, wallet FROM users");
-      res.json(users.rows); // Ensure each user includes wallet data
+      const users = await pool.query(
+        "SELECT id, username, email, isadmin, wallet, user_id, mobile_number, referral_code, referred_by FROM users"
+      );
+      res.json(users.rows);
     } catch (error) {
       console.error("Failed to fetch users:", error);
       res.status(500).json({ message: "Failed to fetch users" });
@@ -194,7 +239,7 @@ app.get("/get-user", async (req, res) => {
       const decoded = jwt.verify(token, process.env.JWT_SECRET);
       const userId = decoded.id;
   
-      const user = await pool.query("SELECT id, username, email, wallet, user_id FROM users WHERE id = $1", [userId]);
+      const user = await pool.query("SELECT id, username, email, wallet, user_id, mobile_number, referral_code FROM users WHERE id = $1", [userId]);
       res.json(user.rows[0]); // Ensure wallet is included in the response
     } catch (error) {
       console.error("Failed to fetch user:", error);

@@ -4,7 +4,7 @@ import { useNavigate } from "react-router-dom";
 import { Form, Button, Alert } from "react-bootstrap";
 
 const Login = () => {
-  const [formData, setFormData] = useState({ email: "", password: "" });
+  const [formData, setFormData] = useState({ mobile_number: "", password: "" });
   const [errors, setErrors] = useState({});
   const [serverError, setServerError] = useState("");
   const navigate = useNavigate();
@@ -12,8 +12,8 @@ const Login = () => {
   // Validate form fields
   const validate = () => {
     const newErrors = {};
-    if (!formData.email || !/\S+@\S+\.\S+/.test(formData.email)) {
-      newErrors.email = "Email is invalid";
+    if (!formData.mobile_number || isNaN(formData.mobile_number)) {
+      newErrors.mobile_number = "A valid mobile number is required";
     }
     if (!formData.password || formData.password.length <= 3) {
       newErrors.password = "Password must be at least 4 characters long";
@@ -35,6 +35,7 @@ const Login = () => {
       localStorage.setItem("token", res.data.token); // Store token
       localStorage.setItem("user", JSON.stringify(res.data.user)); // Store user details
       navigate("/homepage"); // Redirect to homepage after successful login
+      window.location.reload();
     } catch (err) {
       if (err.response && err.response.status === 404) {
         setServerError("User not found. Redirecting to signup...");
@@ -58,18 +59,18 @@ const Login = () => {
     <div className="container mt-4">
       <h2>Login</h2>
       <Form onSubmit={handleSubmit}>
-        {/* Email Field */}
-        <Form.Group className="mb-3" controlId="formEmail">
-          <Form.Label>Email address</Form.Label>
+        {/* Mobile Number Field */}
+        <Form.Group className="mb-3" controlId="formMobileNumber">
+          <Form.Label>Mobile Number</Form.Label>
           <Form.Control
-            type="email"
-            placeholder="Enter email"
-            name="email"
-            value={formData.email}
+            type="text"
+            placeholder="Enter mobile number"
+            name="mobile_number"
+            value={formData.mobile_number}
             onChange={handleChange}
-            isInvalid={!!errors.email}
+            isInvalid={!!errors.mobile_number}
           />
-          <Form.Control.Feedback type="invalid">{errors.email}</Form.Control.Feedback>
+          <Form.Control.Feedback type="invalid">{errors.mobile_number}</Form.Control.Feedback>
         </Form.Group>
 
         {/* Password Field */}

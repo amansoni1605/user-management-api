@@ -75,6 +75,9 @@ const AdminPanel = () => {
             <th>Email</th>
             <th>Admin</th>
             <th>Wallet Balance</th>
+            <th>Mobile Number</th>
+            <th>Referral Code</th>
+            <th>Referred By</th>
             <th>Update Wallet</th>
           </tr>
         </thead>
@@ -85,7 +88,10 @@ const AdminPanel = () => {
               <td>{user.username}</td>
               <td>{user.email}</td>
               <td>{user.isadmin ? "Yes" : "No"}</td>
-              <td>${user.wallet.toFixed(2)}</td> {/* Render wallet with 2 decimal places */}
+              <td>${user.wallet.toFixed(2)}</td>
+              <td>{user.mobile_number}</td>
+              <td>{user.referral_code}</td> {/* Display referral code */}
+              <td>{user.referred_by || "N/A"}</td> {/* Display referred by */}
               <td>
                 <Form.Control
                   type="number"
