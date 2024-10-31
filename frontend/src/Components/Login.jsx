@@ -29,7 +29,7 @@ const Login = () => {
       setErrors(validationErrors);
       return;
     }
- 
+
     try {
       const res = await axios.post("http://localhost:5000/login", formData);
       localStorage.setItem("token", res.data.token); // Store token
