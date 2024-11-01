@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import axios from "axios";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import { Form, Button, Alert } from "react-bootstrap";
 
 const Login = () => {
@@ -95,6 +95,9 @@ const Login = () => {
           Log In
         </Button>
       </Form>
+        <div className="mt-3 text-center">
+          <p>Don't have an account? <Link to="/signup">Sign up here</Link>.</p>
+        </div>
     </div>
   );
 };

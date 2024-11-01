@@ -17,12 +17,18 @@ const AdminPanel = () => {
             Authorization: `Bearer ${token}`,
           },
         });
-        // Convert wallet to a number for each user
-        const usersWithNumericWallet = res.data.map((user) => ({
-          ...user,
-          wallet: parseFloat(user.wallet), // Ensure wallet is a number
-        }));
-        setUsers(usersWithNumericWallet); // Update state with converted data
+
+        // Add referral count for each user
+        const usersWithReferralCount = res.data.map((user) => {
+          const referralCount = res.data.filter(u => u.referred_by === user.referral_code).length;
+          return {
+            ...user,
+            wallet: parseFloat(user.wallet), // Ensure wallet is a number
+            referral_count: referralCount, // Add referral count
+          };
+        });
+
+        setUsers(usersWithReferralCount);
       } catch (err) {
         setError("Failed to fetch users. Make sure you have admin access.");
       }
@@ -49,10 +55,16 @@ const AdminPanel = () => {
       const res = await axios.get("http://localhost:5000/admin/users", {
         headers: { Authorization: `Bearer ${token}` },
       });
-      const updatedUsers = res.data.map((user) => ({
-        ...user,
-        wallet: parseFloat(user.wallet),
-      }));
+
+      const updatedUsers = res.data.map((user) => {
+        const referralCount = res.data.filter(u => u.referred_by === user.referral_code).length;
+        return {
+          ...user,
+          wallet: parseFloat(user.wallet),
+          referral_count: referralCount,
+        };
+      });
+
       setUsers(updatedUsers);
       setWalletUpdate((prev) => ({ ...prev, [id]: "" })); // Clear input field
       setSuccess("Wallet balance updated successfully.");
@@ -85,13 +97,14 @@ const AdminPanel = () => {
           {users.map((user) => (
             <tr key={user.id}>
               <td>{user.id}</td>
-              <td>{user.username}</td>
+              {/* Display username with referral count */}
+              <td>{user.username} ({user.referral_count} refer)</td>
               <td>{user.email}</td>
               <td>{user.isadmin ? "Yes" : "No"}</td>
               <td>${user.wallet.toFixed(2)}</td>
               <td>{user.mobile_number}</td>
-              <td>{user.referral_code}</td> {/* Display referral code */}
-              <td>{user.referred_by || "N/A"}</td> {/* Display referred by */}
+              <td>{user.referral_code}</td>
+              <td>{user.referred_by || "N/A"}</td>
               <td>
                 <Form.Control
                   type="number"

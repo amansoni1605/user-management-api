@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
-import { Form, Button, Alert, Container, Spinner } from "react-bootstrap";
+import { Form, Alert, Container, Spinner, Button } from "react-bootstrap";
+import { FaFacebookF, FaWhatsapp, FaTwitter } from "react-icons/fa"; // Import icons
 
 const MyAccount = () => {
   const [user, setUser] = useState({ username: "", email: "", wallet: 0, user_id: 0, referral_code: "", mobile_number: "" });
@@ -49,6 +50,26 @@ const MyAccount = () => {
       setErrorMessage("Failed to update profile. Please try again.");
     } finally {
       setSaving(false);
+    }
+  };
+
+  const handleShare = (platform) => {
+    const referralMessage = `Check out this app! Use my referral code ${user.referral_code} to sign up.`;
+    const currentUrl = encodeURIComponent(window.location.href);
+    const text = encodeURIComponent(referralMessage);
+
+    switch (platform) {
+      case "facebook":
+        window.open(`https://www.facebook.com/sharer/sharer.php?u=${currentUrl}`, "_blank");
+        break;
+      case "whatsapp":
+        window.open(`https://api.whatsapp.com/send?text=${text} ${currentUrl}`, "_blank");
+        break;
+      case "twitter":
+        window.open(`https://twitter.com/intent/tweet?url=${currentUrl}&text=${text}`, "_blank");
+        break;
+      default:
+        break;
     }
   };
 
@@ -101,6 +122,31 @@ const MyAccount = () => {
           {saving ? <Spinner animation="border" size="sm" /> : "Save Changes"}
         </Button>
       </Form>
+
+      {/* Social Media Share Icons */}
+      <div className="mt-4">
+        <h5>Share your referral code:</h5>
+        <div style={{ display: "flex", gap: "15px", alignItems: "center" }}>
+          <FaFacebookF
+            size={30}
+            color="#3b5998"
+            style={{ cursor: "pointer" }}
+            onClick={() => handleShare("facebook")}
+          />
+          <FaWhatsapp
+            size={30}
+            color="#25D366"
+            style={{ cursor: "pointer" }}
+            onClick={() => handleShare("whatsapp")}
+          />
+          <FaTwitter
+            size={30}
+            color="#1DA1F2"
+            style={{ cursor: "pointer" }}
+            onClick={() => handleShare("twitter")}
+          />
+        </div>
+      </div>
     </Container>
   );
 };

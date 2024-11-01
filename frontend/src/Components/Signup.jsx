@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import axios from "axios";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import { Form, Button, Alert } from "react-bootstrap";
 
 const Signup = () => {
@@ -51,11 +51,15 @@ const Signup = () => {
       localStorage.setItem("token", res.data.token); // Store token
       localStorage.setItem("user", JSON.stringify(res.data.user)); // Store user details
       setLoggedIn(true); // Set user as logged in
-      navigate('/');
     } catch (err) {
       if (err.response && err.response.status === 409) {
-        setServerError("You are already registered. Please use the login link below.");
-        navigate('/login');
+        // Check if the error is due to a duplicate mobile number
+        const errorMessage = err.response.data.message;
+        if (errorMessage.includes("mobile number")) {
+          setServerError("This mobile number is already registered. Please use a different number.");
+        } else {
+          setServerError("You are already registered with this email. Please use the login link below.");
+        }
       } else {
         setServerError("Signup failed. Please try again.");
       }
@@ -146,13 +150,16 @@ const Signup = () => {
         </Form>
       )}
 
-      {serverError.includes("already registered") && (
+      {/* {serverError.includes("already registered") && (
         <div className="mt-3">
           <Alert variant="info">
             <p>You are already registered. <a href="/login">Click here to log in.</a></p>
           </Alert>
         </div>
-      )}
+      )} */}
+       <div className="mt-3 text-center">
+        <p>Already have an account? <Link to="/login">Log in here</Link>.</p>
+      </div>
     </div>
   );
 };

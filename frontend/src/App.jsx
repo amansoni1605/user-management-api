@@ -7,6 +7,7 @@ import AdminPanel from "./Components/Adminpanel";
 import NavBar from "./Components/NavBar";
 import "bootstrap/dist/css/bootstrap.min.css";
 import MyAccount from "./Components/MyAccount";
+import NotFound from "./Components/NotFound";
 
 function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -45,6 +46,8 @@ function App() {
               <Route path="/login" element={<Navigate to="/" replace />} />
             </>
           )}
+            {/* Fallback 404 route for users who are neither authenticated nor visiting login/signup */}
+            {!isAuthenticated && <Route path="*" element={<NotFound />} />}
         </Routes>
       </div>
     </Router>
