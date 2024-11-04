@@ -46,7 +46,7 @@ const Signup = () => {
     }
 
     try {
-      await axios.post("http://localhost:5000/signup", formData);
+      await axios.post("http://localhost:5001/signup", formData);
       setIsRegistered(true); // Set user as registered
 
       // Redirect to login page after 2 seconds

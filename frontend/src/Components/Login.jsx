@@ -31,7 +31,7 @@ const Login = () => {
     }
 
     try {
-      const res = await axios.post("http://localhost:5000/login", formData);
+      const res = await axios.post("http://localhost:5001/login", formData);
       localStorage.setItem("token", res.data.token); // Store token
       localStorage.setItem("user", JSON.stringify(res.data.user)); // Store user details
       navigate("/homepage"); // Redirect to homepage after successful login

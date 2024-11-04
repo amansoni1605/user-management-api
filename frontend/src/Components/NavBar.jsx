@@ -29,6 +29,7 @@ const NavBar = ({ setIsAuthenticated }) => {
         <Nav className="ml-auto">
           <Nav.Link as={Link} to="/homepage">Homepage</Nav.Link>
           <Nav.Link as={Link} to="/myaccount">Myaccount</Nav.Link>
+          <Nav.Link as={Link} to="/products">Products</Nav.Link>
           
           {user?.isadmin && <Nav.Link as={Link} to="/admin">Admin Panel</Nav.Link>}
 

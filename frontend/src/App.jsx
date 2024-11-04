@@ -8,7 +8,7 @@ import NavBar from "./Components/NavBar";
 import "bootstrap/dist/css/bootstrap.min.css";
 import MyAccount from "./Components/MyAccount";
 import NotFound from "./Components/NotFound";
-
+import Packages from "./Components/Packages";
 function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
 
@@ -42,6 +42,7 @@ function App() {
               <Route path="/homepage" element={<Homepage />} />
               <Route path="/admin" element={<AdminPanel />} />
               <Route path="/myaccount" element={<MyAccount />} />
+              <Route path="/products" element={<Packages />} />
               {/* Redirect /login to / if already authenticated */}
               <Route path="/login" element={<Navigate to="/" replace />} />
             </>

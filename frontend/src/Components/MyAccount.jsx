@@ -14,7 +14,7 @@ const MyAccount = () => {
     const fetchUserData = async () => {
       const token = localStorage.getItem("token");
       try {
-        const res = await axios.get("http://localhost:5000/get-user", {
+        const res = await axios.get("http://localhost:5001/get-user", {
           headers: { Authorization: `Bearer ${token}` },
         });
         setUser({ ...res.data, wallet: parseFloat(res.data.wallet) });
@@ -38,7 +38,7 @@ const MyAccount = () => {
     setSaving(true);
     try {
       const token = localStorage.getItem("token");
-      await axios.put("http://localhost:5000/update-user", user, {
+      await axios.put("http://localhost:5001/update-user", user, {
         headers: { Authorization: `Bearer ${token}` },
       });
 
