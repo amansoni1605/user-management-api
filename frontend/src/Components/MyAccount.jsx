@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
-import { Form, Alert, Container, Spinner, Button } from "react-bootstrap";
+import { Form, Alert, Container, Spinner, Button, ListGroup } from "react-bootstrap";
 import { FaFacebookF, FaWhatsapp, FaTwitter } from "react-icons/fa"; // Import icons
 
 const MyAccount = () => {
   const [user, setUser] = useState({ username: "", email: "", wallet: 0, user_id: 0, referral_code: "", mobile_number: "" });
+  const [activePackages, setActivePackages] = useState([]); // State to hold active packages
   const [successMessage, setSuccessMessage] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
   const [loading, setLoading] = useState(true);
@@ -14,10 +15,18 @@ const MyAccount = () => {
     const fetchUserData = async () => {
       const token = localStorage.getItem("token");
       try {
+        // Fetch user data
         const res = await axios.get("http://localhost:5001/get-user", {
           headers: { Authorization: `Bearer ${token}` },
         });
         setUser({ ...res.data, wallet: parseFloat(res.data.wallet) });
+        
+        // Fetch active packages
+        const activePackagesRes = await axios.get("http://localhost:5001/get-active-packages", {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        setActivePackages(activePackagesRes.data);
+
         localStorage.setItem("user", JSON.stringify({ ...res.data, wallet: parseFloat(res.data.wallet) }));
         setLoading(false);
       } catch (error) {
@@ -122,6 +131,22 @@ const MyAccount = () => {
           {saving ? <Spinner animation="border" size="sm" /> : "Save Changes"}
         </Button>
       </Form>
+
+      {/* Active Packages Section */}
+      <div className="mt-4">
+        <h3>Your Active Packages</h3>
+        {activePackages.length > 0 ? (
+          <ListGroup>
+            {activePackages.map(pkg => (
+              <ListGroup.Item key={pkg.package_id}>
+                <strong>{pkg.name}</strong> - Investment: ₹{pkg.investment_amount} - Purchased on: {new Date(pkg.purchase_date).toLocaleDateString()}
+              </ListGroup.Item>
+            ))}
+          </ListGroup>
+        ) : (
+          <Alert variant="info">You have no active packages.</Alert>
+        )}
+      </div>
 
       {/* Social Media Share Icons */}
       <div className="mt-4">

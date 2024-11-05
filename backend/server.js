@@ -134,6 +134,8 @@ app.get("/packages", async (req, res) => {
 });
 
 // Endpoint to purchase a package and update wallet balance
+// Endpoint to purchase a package and update wallet balance
+// Endpoint to purchase a package and update wallet balance
 app.post("/buy-package", async (req, res) => {
   const { package_id, investment_amount } = req.body;
   const token = req.headers.authorization && req.headers.authorization.split(" ")[1];
@@ -174,6 +176,7 @@ app.post("/buy-package", async (req, res) => {
     res.status(500).json({ message: "Failed to purchase package" });
   }
 });
+
 
 
 // Middleware to verify admin access
@@ -246,6 +249,29 @@ app.get("/get-user", async (req, res) => {
   }
 });
 
+// Endpoint to get active packages for the user (for My Account page)
+app.get("/user/active-packages", async (req, res) => {
+  const token = req.headers.authorization && req.headers.authorization.split(" ")[1];
+  if (!token) return res.status(401).json({ message: "Unauthorized" });
+
+  try {
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    const userId = decoded.id;
+
+    const activePackages = await pool.query(`
+      SELECT pk.package_id, pk.name, pk.description, pk.investment_amount, pk.earnings_per_day, pk.total_earnings, pk.earnings_days, pk.maximum_purchase
+      FROM purchases pu
+      JOIN packages pk ON pu.package_id = pk.package_id
+      WHERE pu.user_id = $1 AND pu.is_active = TRUE`, [userId]);
+
+    res.json(activePackages.rows);
+  } catch (error) {
+    console.error("Failed to fetch active packages:", error);
+    res.status(500).json({ message: "Failed to fetch active packages" });
+  }
+});
+
+
 // Endpoint to create a new package
 app.post("/admin/add-package", verifyAdmin, async (req, res) => {
   const { name, description, investment_amount, earnings_per_day, earnings_days, total_earnings, maximum_purchase, is_active } = req.body;
@@ -308,23 +334,31 @@ app.get("/admin/package-sales", verifyAdmin, async (req, res) => {
     res.status(500).json({ message: "Failed to fetch package sales" });
   }
 });
+// Endpoint to get active packages for the authenticated user
+app.get("/get-active-packages", async (req, res) => {
+  const token = req.headers.authorization && req.headers.authorization.split(" ")[1];
+  if (!token) return res.status(401).json({ message: "Unauthorized" });
 
-// Endpoint to get all active purchases for users
-app.get("/admin/active-purchases", verifyAdmin, async (req, res) => {
   try {
-    const activePurchases = await pool.query(`
-      SELECT u.username, p.package_id, pk.name, pu.investment_amount, pu.purchase_date
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    const userId = decoded.id;
+
+    const activePackages = await pool.query(`
+      SELECT pk.package_id, pu.purchase_date ,pk.name, pk.description, pk.investment_amount, pk.earnings_per_day, pk.total_earnings, pk.earnings_days
       FROM purchases pu
-      JOIN users u ON pu.user_id = u.id
       JOIN packages pk ON pu.package_id = pk.package_id
-      WHERE pu.is_active = TRUE
-    `);
-    res.json(activePurchases.rows);
+      WHERE pu.user_id = $1 AND pu.is_active = TRUE
+    `, [userId]);
+
+    res.json(activePackages.rows);
   } catch (error) {
-    console.error("Failed to fetch active purchases:", error);
-    res.status(500).json({ message: "Failed to fetch active purchases" });
+    console.error("Failed to fetch active packages:", error);
+    res.status(500).json({ message: "Failed to fetch active packages" });
   }
 });
+
+
+
 
 // Start the server
 const PORT = process.env.PORT || 5001;

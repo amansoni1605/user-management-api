@@ -1,19 +1,31 @@
 import React, { useEffect, useState } from "react";
 import axios from "axios";
-import { Card, Button, Container, Row, Col, Alert } from "react-bootstrap";
+import { Card, Button, Container, Row, Col, Alert, Badge } from "react-bootstrap";
 
 const Packages = () => {
   const [packages, setPackages] = useState([]);
+  const [userActivePackages, setUserActivePackages] = useState([]); // State to hold user's active packages
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Fetch packages from the backend
-    const fetchPackages = async () => {
+    const fetchPackagesAndActiveUserPackages = async () => {
       try {
-        const res = await axios.get("http://localhost:5001/packages"); // Ensure the correct port
-        setPackages(res.data);
+        const token = localStorage.getItem("token");
+
+        // Fetch packages from the backend
+        const packageRes = await axios.get("http://localhost:5001/packages");
+        setPackages(packageRes.data);
+
+        // Fetch user's active packages
+        const activePackagesRes = await axios.get("http://localhost:5001/get-active-packages", {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        // Extract the package IDs from the response
+        const activePackageIds = activePackagesRes.data.map(pkg => pkg.package_id);
+        setUserActivePackages(activePackageIds);
+
         setLoading(false);
       } catch (err) {
         setError("Failed to load packages. Please try again later.");
@@ -21,7 +33,7 @@ const Packages = () => {
       }
     };
 
-    fetchPackages();
+    fetchPackagesAndActiveUserPackages();
   }, []);
 
   const handleBuyPackage = async (packageId, investmentAmount) => {
@@ -29,7 +41,7 @@ const Packages = () => {
       const token = localStorage.getItem("token");
       await axios.post(
         "http://localhost:5001/buy-package",
-        { package_id: packageId, investment_amount: parseFloat(investmentAmount) }, // Ensure it's a float
+        { package_id: packageId, investment_amount: parseFloat(investmentAmount) },
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -38,6 +50,8 @@ const Packages = () => {
       );
       setSuccess("Package purchased successfully! Your wallet has been updated.");
       setError(""); // Clear any previous errors
+      // Optionally, you may want to refresh active packages after purchase
+      setUserActivePackages(prev => [...prev, packageId]); // Add the new package to active packages
     } catch (err) {
       const errorMessage = err.response?.data?.message || "Failed to purchase package. Please check your wallet balance or try again later.";
       setError(errorMessage);
@@ -57,8 +71,8 @@ const Packages = () => {
           <Col md={4} key={pkg.package_id} className="mb-4">
             <Card>
               <Card.Body>
-                {pkg.is_active && (
-                  <div className="text-success font-weight-bold mb-2">Active</div>
+                {userActivePackages.includes(pkg.package_id) && ( // Check if the user has purchased this package
+                  <Badge pill variant="success" className="mb-2 bg-success">Active</Badge>
                 )}
                 <Card.Title>{pkg.name}</Card.Title>
                 <Card.Text>
@@ -96,4 +110,3 @@ const Packages = () => {
 };
 
 export default Packages;
-    
