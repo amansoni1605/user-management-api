@@ -7,6 +7,7 @@ const Login = () => {
   const [formData, setFormData] = useState({ mobile_number: "", password: "" });
   const [errors, setErrors] = useState({});
   const [serverError, setServerError] = useState("");
+  const [successMessage, setSuccessMessage] = useState(""); // State for success message
   const navigate = useNavigate();
 
   // Validate form fields
@@ -34,8 +35,11 @@ const Login = () => {
       const res = await axios.post("http://localhost:5001/login", formData);
       localStorage.setItem("token", res.data.token); // Store token
       localStorage.setItem("user", JSON.stringify(res.data.user)); // Store user details
-      navigate("/homepage"); // Redirect to homepage after successful login
-      window.location.reload();
+      setSuccessMessage("Login successful! Redirecting to homepage..."); // Set success message
+      setTimeout(() => {
+        navigate("/homepage"); // Redirect to homepage after a brief delay
+        window.location.reload();
+      }, 1500); // Delay for user to see the success message
     } catch (err) {
       if (err.response && err.response.status === 404) {
         setServerError("User not found. Redirecting to signup...");
@@ -89,15 +93,18 @@ const Login = () => {
 
         {/* Display server error message */}
         {serverError && <Alert variant="danger">{serverError}</Alert>}
+        
+        {/* Display success message */}
+        {successMessage && <Alert variant="success">{successMessage}</Alert>}
 
         {/* Submit Button */}
         <Button variant="primary" type="submit">
           Log In
         </Button>
       </Form>
-        <div className="mt-3 text-center">
-          <p>Don't have an account? <Link to="/signup">Sign up here</Link>.</p>
-        </div>
+      <div className="mt-3 text-center">
+        <p>Don't have an account? <Link to="/signup">Sign up here</Link>.</p>
+      </div>
     </div>
   );
 };

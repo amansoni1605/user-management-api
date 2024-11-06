@@ -349,4 +349,3 @@ const AdminPanel = () => {
 };
 
 export default AdminPanel;
-s
