@@ -9,6 +9,29 @@ const bodyParser = require("body-parser");
 const app = express();
 app.use(cors());
 app.use(bodyParser.json());
+const cron = require('node-cron');
+
+cron.schedule('0 0 * * *', async () => {
+  try {
+    const result = await pool.query(`
+      UPDATE users u
+      SET wallet = wallet + (
+        SELECT SUM(pk.earnings_per_day)
+        FROM purchases pu
+        JOIN packages pk ON pu.package_id = pk.package_id
+        WHERE pu.user_id = u.id AND pu.is_active = TRUE
+      )
+      WHERE EXISTS (
+        SELECT 1 FROM purchases pu
+        WHERE pu.user_id = u.id AND pu.is_active = TRUE
+      )
+    `);
+    console.log('Wallets updated successfully');
+  } catch (error) {
+    console.error('Error updating wallets:', error);
+  }
+});
+
 
 // Connect to PostgreSQL
 const pool = new Pool({
@@ -134,50 +157,50 @@ app.get("/packages", async (req, res) => {
 });
 
 // Endpoint to purchase a package and update wallet balance
-// Endpoint to purchase a package and update wallet balance
-// Endpoint to purchase a package and update wallet balance
 app.post("/buy-package", async (req, res) => {
   const { package_id, investment_amount } = req.body;
   const token = req.headers.authorization && req.headers.authorization.split(" ")[1];
   if (!token) return res.status(401).json({ message: "Unauthorized" });
 
   try {
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    const userId = decoded.id;
+      const decoded = jwt.verify(token, process.env.JWT_SECRET);
+      const userId = decoded.id;
 
-    // Fetch user's current wallet balance
-    const userRes = await pool.query("SELECT wallet FROM users WHERE id = $1", [userId]);
-    const userWallet = parseFloat(userRes.rows[0].wallet); // Convert to float
+      // Fetch user's current wallet balance
+      const userRes = await pool.query("SELECT wallet FROM users WHERE id = $1", [userId]);
+      const userWallet = parseFloat(userRes.rows[0].wallet); // Convert to float
 
-    // Check if user has sufficient funds
-    if (userWallet < parseFloat(investment_amount)) {
-      return res.status(400).json({ message: "Insufficient wallet balance" });
-    }
+      // Check if user has sufficient funds
+      if (userWallet < parseFloat(investment_amount)) {
+          return res.status(400).json({ message: "Insufficient wallet balance" });
+      }
 
-    // Deduct the investment amount from user's wallet
-    await pool.query("UPDATE users SET wallet = wallet - $1 WHERE id = $2", [investment_amount, userId]);
+      // Deduct the investment amount from user's wallet
+      await pool.query("UPDATE users SET wallet = wallet - $1 WHERE id = $2", [investment_amount, userId]);
 
-    // Check if the package is active before recording the purchase
-    const packageRes = await pool.query("SELECT is_active FROM packages WHERE package_id = $1", [package_id]);
-    
-    if (packageRes.rows.length === 0 || !packageRes.rows[0].is_active) {
-      return res.status(400).json({ message: "Selected package is not active." });
-    }
+      // Check if the package is active before recording the purchase
+      const packageRes = await pool.query("SELECT is_active, earnings_per_day FROM packages WHERE package_id = $1", [package_id]);
+      
+      if (packageRes.rows.length === 0 || !packageRes.rows[0].is_active) {
+          return res.status(400).json({ message: "Selected package is not active." });
+      }
 
-    // Record the purchase in the purchases table with is_active set to TRUE
-    await pool.query(
-      "INSERT INTO purchases (user_id, package_id, investment_amount, purchase_date, is_active) VALUES ($1, $2, $3, NOW(), TRUE)",
-      [userId, package_id, investment_amount]
-    );
+      // Record the purchase in the purchases table
+      await pool.query(
+          "INSERT INTO purchases (user_id, package_id, investment_amount, purchase_date, is_active) VALUES ($1, $2, $3, NOW(), TRUE)",
+          [userId, package_id, investment_amount]
+      );
 
-    res.json({ message: "Package purchased successfully" });
+      // Immediately update wallet based on active earnings from the purchased package
+      const earningsPerDay = packageRes.rows[0].earnings_per_day; // Get the earnings from the package
+      await pool.query("UPDATE users SET wallet = wallet + $1 WHERE id = $2", [earningsPerDay, userId]); // Update wallet
+
+      res.json({ message: "Package purchased successfully" });
   } catch (error) {
-    console.error("Failed to purchase package:", error);
-    res.status(500).json({ message: "Failed to purchase package" });
+      console.error("Failed to purchase package:", error);
+      res.status(500).json({ message: "Failed to purchase package" });
   }
 });
-
-
 
 // Middleware to verify admin access
 const verifyAdmin = async (req, res, next) => {
@@ -212,25 +235,60 @@ app.get("/admin/users", verifyAdmin, async (req, res) => {
 });
 
 // Endpoint to update user wallet
+// Endpoint to update user's wallet based on active packages
+app.put("/update-wallets", verifyAdmin, async (req, res) => {
+  try {
+    const result = await pool.query(`
+      UPDATE users u
+      SET wallet = wallet + (
+        SELECT SUM(pk.earnings_per_day)
+        FROM purchases pu
+        JOIN packages pk ON pu.package_id = pk.package_id
+        WHERE pu.user_id = u.id AND pu.is_active = TRUE
+      )
+      WHERE EXISTS (
+        SELECT 1 FROM purchases pu
+        WHERE pu.user_id = u.id AND pu.is_active = TRUE
+      )
+    `);
+    res.json({ message: "Wallets updated successfully." });
+  } catch (error) {
+    console.error('Error updating wallets:', error);
+    res.status(500).json({ message: "Failed to update wallets." });
+  }
+});
+
+// Admin route to update wallet balance for a user
 app.put("/admin/update-wallet/:id", verifyAdmin, async (req, res) => {
   const { id } = req.params;
   const { wallet } = req.body;
 
-  if (isNaN(wallet) || wallet < 0) {
+  // Parse wallet as a float and validate it
+  const walletAmount = parseFloat(wallet);
+  if (isNaN(walletAmount) || walletAmount < 0) {
     return res.status(400).json({ message: "Invalid wallet amount." });
   }
 
   try {
     const updatedUser = await pool.query(
       "UPDATE users SET wallet = $1 WHERE id = $2 RETURNING id, username, email, wallet, isadmin",
-      [wallet, id]
+      [walletAmount, id]
     );
+
+    // Check if the user was found and updated
+    if (updatedUser.rowCount === 0) {
+      return res.status(404).json({ message: "User not found." });
+    }
+
     res.json(updatedUser.rows[0]);
   } catch (error) {
     console.error("Error updating wallet balance:", error);
     res.status(500).json({ message: "Failed to update wallet balance" });
   }
 });
+
+
+
 
 // Endpoint to fetch user data (MyAccount)
 app.get("/get-user", async (req, res) => {

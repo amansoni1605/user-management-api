@@ -13,30 +13,63 @@ const MyAccount = () => {
 
   useEffect(() => {
     const fetchUserData = async () => {
-      const token = localStorage.getItem("token");
-      try {
-        // Fetch user data
-        const res = await axios.get("http://localhost:5001/get-user", {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        setUser({ ...res.data, wallet: parseFloat(res.data.wallet) });
-        
-        // Fetch active packages
-        const activePackagesRes = await axios.get("http://localhost:5001/get-active-packages", {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        setActivePackages(activePackagesRes.data);
+        const token = localStorage.getItem("token");
+        try {
+            const res = await axios.get("http://localhost:5001/get-user", {
+                headers: { Authorization: `Bearer ${token}` },
+            });
+            setUser({ ...res.data, wallet: parseFloat(res.data.wallet) });
+            
+            const activePackagesRes = await axios.get("http://localhost:5001/get-active-packages", {
+                headers: { Authorization: `Bearer ${token}` },
+            });
+            setActivePackages(activePackagesRes.data);
+            setLoading(false);
+        } catch (error) {
+            console.error("Failed to fetch user data:", error);
+            setErrorMessage("Failed to load user data. Please try again.");
+            setLoading(false);
+        }
+    };
 
-        localStorage.setItem("user", JSON.stringify({ ...res.data, wallet: parseFloat(res.data.wallet) }));
-        setLoading(false);
-      } catch (error) {
-        console.error("Failed to fetch user data:", error);
-        setErrorMessage("Failed to load user data. Please try again.");
-        setLoading(false);
+    fetchUserData();
+
+    const walletInterval = setInterval(() => {
+        fetchUserData();
+    }, 86400000); // 24 hours in milliseconds
+
+    return () => clearInterval(walletInterval);
+}, []);
+  useEffect(() => {
+    const updateWallet = async () => {
+      const token = localStorage.getItem("token");
+      const totalEarnings = activePackages.reduce((acc, pkg) => acc + parseFloat(pkg.earnings_per_day), 0);
+      
+      if (totalEarnings > 0) {
+        try {
+          // Update wallet in the database
+          await axios.put("http://localhost:5001/update-wallet", { wallet: totalEarnings }, {
+            headers: { Authorization: `Bearer ${token}` },
+          });
+
+          // Update user state
+          setUser(prevUser => ({
+            ...prevUser,
+            wallet: prevUser.wallet + totalEarnings, // Increase by calculated earnings
+          }));
+        } catch (error) {
+          console.error("Failed to update wallet in database:", error);
+        }
       }
     };
-    fetchUserData();
-  }, []);
+
+    // Call updateWallet function once a day
+    const walletUpdateInterval = setInterval(() => {
+      updateWallet();
+    }, 86400000); // 86400000 milliseconds = 24 hours
+
+    return () => clearInterval(walletUpdateInterval); // Cleanup interval on component unmount
+  }, [activePackages]);
 
   const handleNameChange = (e) => {
     setUser({ ...user, username: e.target.value });
