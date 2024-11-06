@@ -73,7 +73,7 @@ const Signup = () => {
     <Container className="mt-4">
       <h2>Signup</h2>
       {isRegistered ? (
-        <Alert variant="success">
+        <Alert variant="success" className="text-center">
           <p>You have successfully registered! Redirecting to the login page...</p>
           <Spinner animation="border" role="status" size="sm" className="ms-2">
             <span className="visually-hidden">Loading...</span>

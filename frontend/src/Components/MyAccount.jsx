@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
-import { Form, Alert, Container, Spinner, Button, ListGroup } from "react-bootstrap";
+import { Form, Alert, Container, Spinner, Button, ListGroup, Card, Row, Col, Tabs, Tab } from "react-bootstrap";
 import { FaFacebookF, FaWhatsapp, FaTwitter } from "react-icons/fa"; // Import icons
 
 const MyAccount = () => {
@@ -13,63 +13,29 @@ const MyAccount = () => {
 
   useEffect(() => {
     const fetchUserData = async () => {
-        const token = localStorage.getItem("token");
-        try {
-            const res = await axios.get("http://localhost:5001/get-user", {
-                headers: { Authorization: `Bearer ${token}` },
-            });
-            setUser({ ...res.data, wallet: parseFloat(res.data.wallet) });
-            
-            const activePackagesRes = await axios.get("http://localhost:5001/get-active-packages", {
-                headers: { Authorization: `Bearer ${token}` },
-            });
-            setActivePackages(activePackagesRes.data);
-            setLoading(false);
-        } catch (error) {
-            console.error("Failed to fetch user data:", error);
-            setErrorMessage("Failed to load user data. Please try again.");
-            setLoading(false);
-        }
-    };
-
-    fetchUserData();
-
-    const walletInterval = setInterval(() => {
-        fetchUserData();
-    }, 86400000); // 24 hours in milliseconds
-
-    return () => clearInterval(walletInterval);
-}, []);
-  useEffect(() => {
-    const updateWallet = async () => {
       const token = localStorage.getItem("token");
-      const totalEarnings = activePackages.reduce((acc, pkg) => acc + parseFloat(pkg.earnings_per_day), 0);
-      
-      if (totalEarnings > 0) {
-        try {
-          // Update wallet in the database
-          await axios.put("http://localhost:5001/update-wallet", { wallet: totalEarnings }, {
-            headers: { Authorization: `Bearer ${token}` },
-          });
-
-          // Update user state
-          setUser(prevUser => ({
-            ...prevUser,
-            wallet: prevUser.wallet + totalEarnings, // Increase by calculated earnings
-          }));
-        } catch (error) {
-          console.error("Failed to update wallet in database:", error);
-        }
+      try {
+        // Fetch user data
+        const res = await axios.get("http://localhost:5001/get-user", {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        setUser({ ...res.data, wallet: parseFloat(res.data.wallet) });
+        
+        // Fetch active packages
+        const activePackagesRes = await axios.get("http://localhost:5001/get-active-packages", {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        setActivePackages(activePackagesRes.data);
+        setLoading(false);
+      } catch (error) {
+        console.error("Failed to fetch user data:", error);
+        setErrorMessage("Failed to load user data. Please try again.");
+        setLoading(false);
       }
     };
 
-    // Call updateWallet function once a day
-    const walletUpdateInterval = setInterval(() => {
-      updateWallet();
-    }, 86400000); // 86400000 milliseconds = 24 hours
-
-    return () => clearInterval(walletUpdateInterval); // Cleanup interval on component unmount
-  }, [activePackages]);
+    fetchUserData();
+  }, []);
 
   const handleNameChange = (e) => {
     setUser({ ...user, username: e.target.value });
@@ -126,85 +92,92 @@ const MyAccount = () => {
 
   return (
     <Container className="mt-4">
-      <h2>My Account</h2>
-      {errorMessage && <Alert variant="danger">{errorMessage}</Alert>}
-      {successMessage && <Alert variant="success">{successMessage}</Alert>}
-      <Form>
-        <Form.Group controlId="formUserId">
-          <Form.Label>User ID</Form.Label>
-          <Form.Control type="text" value={user.user_id} readOnly />
-        </Form.Group>
+      <Card>
+        <Card.Body>
+          <Card.Title className="text-center">My Account</Card.Title>
+          {errorMessage && <Alert variant="danger">{errorMessage}</Alert>}
+          {successMessage && <Alert variant="success">{successMessage}</Alert>}
+          
+          <Tabs defaultActiveKey="profile" id="uncontrolled-tab-example" className="mb-3">
+            <Tab eventKey="profile" title="Profile">
+              <Form>
+                <Form.Group controlId="formUserId">
+                  <Form.Label>User ID</Form.Label>
+                  <Form.Control type="text" value={user.user_id} readOnly />
+                </Form.Group>
 
-        <Form.Group controlId="formUsername">
-          <Form.Label>Username</Form.Label>
-          <Form.Control
-            type="text"
-            value={user.username}
-            onChange={handleNameChange}
-            placeholder="Enter your name"
-          />
-        </Form.Group>
+                <Form.Group controlId="formUsername">
+                  <Form.Label>Username</Form.Label>
+                  <Form.Control
+                    type="text"
+                    value={user.username}
+                    onChange={handleNameChange}
+                    placeholder="Enter your name"
+                  />
+                </Form.Group>
 
-        <Form.Group controlId="formMobileNumber" className="mt-3">
-          <Form.Label>Mobile Number</Form.Label>
-          <Form.Control type="text" value={user.mobile_number} readOnly />
-        </Form.Group>
+                <Form.Group controlId="formMobileNumber" className="mt-3">
+                  <Form.Label>Mobile Number</Form.Label>
+                  <Form.Control type="text" value={user.mobile_number} readOnly />
+                </Form.Group>
 
-        <Form.Group controlId="formWallet" className="mt-3">
-          <Form.Label>Wallet Balance</Form.Label>
-          <Form.Control type="text" value={`$${user.wallet.toFixed(2)}`} readOnly />
-        </Form.Group>
+                <Form.Group controlId="formWallet" className="mt-3">
+                  <Form.Label>Wallet Balance</Form.Label>
+                  <Form.Control type="text" value={`$${user.wallet.toFixed(2)}`} readOnly />
+                </Form.Group>
 
-        <Form.Group controlId="formReferralCode" className="mt-3">
-          <Form.Label>Referral Code</Form.Label>
-          <Form.Control type="text" value={user.referral_code} readOnly />
-        </Form.Group>
+                <Form.Group controlId="formReferralCode" className="mt-3">
+                  <Form.Label>Referral Code</Form.Label>
+                  <Form.Control type="text" value={user.referral_code} readOnly />
+                </Form.Group>
 
-        <Button variant="primary" onClick={handleSaveChanges} className="mt-3" disabled={saving}>
-          {saving ? <Spinner animation="border" size="sm" /> : "Save Changes"}
-        </Button>
-      </Form>
-
-      {/* Active Packages Section */}
-      <div className="mt-4">
-        <h3>Your Active Packages</h3>
-        {activePackages.length > 0 ? (
-          <ListGroup>
-            {activePackages.map(pkg => (
-              <ListGroup.Item key={pkg.package_id}>
-                <strong>{pkg.name}</strong> - Investment: ₹{pkg.investment_amount} - Purchased on: {new Date(pkg.purchase_date).toLocaleDateString()}
-              </ListGroup.Item>
-            ))}
-          </ListGroup>
-        ) : (
-          <Alert variant="info">You have no active packages.</Alert>
-        )}
-      </div>
-
-      {/* Social Media Share Icons */}
-      <div className="mt-4">
-        <h5>Share your referral code:</h5>
-        <div style={{ display: "flex", gap: "15px", alignItems: "center" }}>
-          <FaFacebookF
-            size={30}
-            color="#3b5998"
-            style={{ cursor: "pointer" }}
-            onClick={() => handleShare("facebook")}
-          />
-          <FaWhatsapp
-            size={30}
-            color="#25D366"
-            style={{ cursor: "pointer" }}
-            onClick={() => handleShare("whatsapp")}
-          />
-          <FaTwitter
-            size={30}
-            color="#1DA1F2"
-            style={{ cursor: "pointer" }}
-            onClick={() => handleShare("twitter")}
-          />
-        </div>
-      </div>
+                <Button variant="primary" onClick={handleSaveChanges} className="mt-3" disabled={saving}>
+                  {saving ? <Spinner animation="border" size="sm" /> : "Save Changes"}
+                </Button>
+              </Form>
+            </Tab>
+            <Tab eventKey="packages" title="Active Packages">
+              <h5 className="mt-3">Your Active Packages</h5>
+              {activePackages.length > 0 ? (
+                <ListGroup>
+                  {activePackages.map(pkg => (
+                    <ListGroup.Item key={pkg.package_id}>
+                      <strong>{pkg.name}</strong> - Investment: ₹{pkg.investment_amount} - Purchased on: {new Date(pkg.purchase_date).toLocaleDateString()}
+                    </ListGroup.Item>
+                  ))}
+                </ListGroup>
+              ) : (
+                <Alert variant="info">You have no active packages.</Alert>
+              )}
+            </Tab>
+          </Tabs>
+          
+          {/* Social Media Share Icons */}
+          <div className="mt-4 text-center">
+            <h5>Share your referral code:</h5>
+            <div style={{ display: "flex", justifyContent: "center", gap: "15px", alignItems: "center" }}>
+              <FaFacebookF
+                size={30}
+                color="#3b5998"
+                style={{ cursor: "pointer" }}
+                onClick={() => handleShare("facebook")}
+              />
+              <FaWhatsapp
+                size={30}
+                color="#25D366"
+                style={{ cursor: "pointer" }}
+                onClick={() => handleShare("whatsapp")}
+              />
+              <FaTwitter
+                size={30}
+                color="#1DA1F2"
+                style={{ cursor: "pointer" }}
+                onClick={() => handleShare("twitter")}
+              />
+            </div>
+          </div>
+        </Card.Body>
+      </Card>
     </Container>
   );
 };
