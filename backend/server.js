@@ -5,12 +5,22 @@ const jwt = require("jsonwebtoken");
 const { Pool } = require("pg");
 const cors = require("cors");
 const bodyParser = require("body-parser");
+const cron = require('node-cron');
 
 const app = express();
 app.use(cors());
 app.use(bodyParser.json());
-const cron = require('node-cron');
 
+// Connect to PostgreSQL
+const pool = new Pool({
+  user: process.env.DB_USER,
+  host: process.env.DB_HOST,
+  database: process.env.DB_NAME,
+  password: process.env.DB_PASS,
+  port: process.env.DB_PORT,
+});
+
+// Cron job to update user wallets daily
 cron.schedule('0 0 * * *', async () => {
   try {
     const result = await pool.query(`
@@ -30,16 +40,6 @@ cron.schedule('0 0 * * *', async () => {
   } catch (error) {
     console.error('Error updating wallets:', error);
   }
-});
-
-
-// Connect to PostgreSQL
-const pool = new Pool({
-  user: process.env.DB_USER,
-  host: process.env.DB_HOST,
-  database: process.env.DB_NAME,
-  password: process.env.DB_PASS,
-  port: process.env.DB_PORT,
 });
 
 // Helper to generate JWT token
@@ -287,9 +287,6 @@ app.put("/admin/update-wallet/:id", verifyAdmin, async (req, res) => {
   }
 });
 
-
-
-
 // Endpoint to fetch user data (MyAccount)
 app.get("/get-user", async (req, res) => {
   const token = req.headers.authorization && req.headers.authorization.split(" ")[1];
@@ -328,7 +325,6 @@ app.get("/user/active-packages", async (req, res) => {
     res.status(500).json({ message: "Failed to fetch active packages" });
   }
 });
-
 
 // Endpoint to create a new package
 app.post("/admin/add-package", verifyAdmin, async (req, res) => {
@@ -392,6 +388,7 @@ app.get("/admin/package-sales", verifyAdmin, async (req, res) => {
     res.status(500).json({ message: "Failed to fetch package sales" });
   }
 });
+
 // Endpoint to get active packages for the authenticated user
 app.get("/get-active-packages", async (req, res) => {
   const token = req.headers.authorization && req.headers.authorization.split(" ")[1];
@@ -414,9 +411,6 @@ app.get("/get-active-packages", async (req, res) => {
     res.status(500).json({ message: "Failed to fetch active packages" });
   }
 });
-
-
-
 
 // Start the server
 const PORT = process.env.PORT || 5004;
