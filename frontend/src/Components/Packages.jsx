@@ -15,11 +15,11 @@ const Packages = () => {
         const token = localStorage.getItem("token");
 
         // Fetch packages from the backend
-        const packageRes = await axios.get("http://localhost:5001/packages");
+        const packageRes = await axios.get(`${import.meta.env.VITE_API_URL}/packages`);
         setPackages(packageRes.data);
 
         // Fetch user's active packages
-        const activePackagesRes = await axios.get("http://localhost:5001/get-active-packages", {
+        const activePackagesRes = await axios.get(`${import.meta.env.VITE_API_URL}/get-active-packages`, {
           headers: { Authorization: `Bearer ${token}` },
         });
         // Extract the package IDs from the response
@@ -40,7 +40,7 @@ const Packages = () => {
     try {
       const token = localStorage.getItem("token");
       await axios.post(
-        "http://localhost:5001/buy-package",
+        `${import.meta.env.VITE_API_URL}/buy-package`,
         { package_id: packageId, investment_amount: parseFloat(investmentAmount) },
         {
           headers: {

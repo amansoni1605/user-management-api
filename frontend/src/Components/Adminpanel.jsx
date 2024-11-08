@@ -29,7 +29,7 @@ const AdminPanel = () => {
   const fetchUsers = async () => {
     try {
       const token = localStorage.getItem("token");
-      const res = await axios.get("http://localhost:5001/admin/users", {
+      const res = await axios.get(`${import.meta.env.VITE_API_URL}/admin/users`, {
         headers: { Authorization: `Bearer ${token}` },
       });
 
@@ -51,7 +51,7 @@ const AdminPanel = () => {
   const fetchPackages = async () => {
     try {
       const token = localStorage.getItem("token");
-      const res = await axios.get("http://localhost:5001/admin/packages", {
+      const res = await axios.get(`${import.meta.env.VITE_API_URL}/admin/packages`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       setPackages(res.data);
@@ -63,7 +63,7 @@ const AdminPanel = () => {
   const fetchPackageSales = async () => {
     try {
       const token = localStorage.getItem("token");
-      const res = await axios.get("http://localhost:5001/admin/package-sales", {
+      const res = await axios.get(`${import.meta.env.VITE_API_URL}/admin/package-sales`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       setPackageSales(res.data);
@@ -81,7 +81,7 @@ const AdminPanel = () => {
     try {
       const token = localStorage.getItem("token");
       await axios.put(
-        `http://localhost:5001/admin/update-wallet/${id}`,
+        `${import.meta.env.VITE_API_URL}/admin/update-wallet/${id}`,
         { wallet: walletUpdate[id] },
         { headers: { Authorization: `Bearer ${token}` } }
       );
@@ -107,7 +107,7 @@ const AdminPanel = () => {
     e.preventDefault();
     try {
       const token = localStorage.getItem("token");
-      const res = await axios.post("http://localhost:5001/admin/add-package", newPackage, {
+      const res = await axios.post(`${import.meta.env.VITE_API_URL}/admin/add-package`, newPackage, {
         headers: { Authorization: `Bearer ${token}` },
       });
       setPackages((prev) => [...prev, res.data]);

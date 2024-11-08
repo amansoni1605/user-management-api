@@ -7,10 +7,9 @@ const Login = () => {
   const [formData, setFormData] = useState({ mobile_number: "", password: "" });
   const [errors, setErrors] = useState({});
   const [serverError, setServerError] = useState("");
-  const [successMessage, setSuccessMessage] = useState(""); // State for success message
+  const [successMessage, setSuccessMessage] = useState("");
   const navigate = useNavigate();
 
-  // Validate form fields
   const validate = () => {
     const newErrors = {};
     if (!formData.mobile_number || isNaN(formData.mobile_number)) {
@@ -22,7 +21,6 @@ const Login = () => {
     return newErrors;
   };
 
-  // Handle form submission
   const handleSubmit = async (e) => {
     e.preventDefault();
     const validationErrors = validate();
@@ -32,20 +30,20 @@ const Login = () => {
     }
 
     try {
-      const res = await axios.post("http://localhost:5001/login", formData);
-      localStorage.setItem("token", res.data.token); // Store token
-      localStorage.setItem("user", JSON.stringify(res.data.user)); // Store user details
-      setSuccessMessage("Login successful! Redirecting to homepage..."); // Set success message
+      const res = await axios.post(`${import.meta.env.VITE_API_URL}/login`, formData);
+      localStorage.setItem("token", res.data.token);
+      localStorage.setItem("user", JSON.stringify(res.data.user));
+      setSuccessMessage("Login successful! Redirecting to homepage...");
       setTimeout(() => {
-        navigate("/homepage"); // Redirect to homepage after a brief delay
+        navigate("/homepage");
         window.location.reload();
-      }, 1500); // Delay for user to see the success message
+      }, 1500);
     } catch (err) {
       if (err.response && err.response.status === 404) {
         setServerError("User not found. Redirecting to signup...");
         setTimeout(() => {
-          navigate("/signup"); // Redirect to signup if user is not found
-        }, 1500); // Adding delay to display the error message
+          navigate("/signup");
+        }, 1500);
       } else {
         setServerError("Login failed. Please check your credentials.");
       }
@@ -55,7 +53,7 @@ const Login = () => {
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
     if (errors[e.target.name]) {
-      setErrors({ ...errors, [e.target.name]: null }); // Clear error on change
+      setErrors({ ...errors, [e.target.name]: null });
     }
   };
 
@@ -63,7 +61,6 @@ const Login = () => {
     <div className="container mt-4">
       <h2>Login</h2>
       <Form onSubmit={handleSubmit}>
-        {/* Mobile Number Field */}
         <Form.Group className="mb-3" controlId="formMobileNumber">
           <Form.Label>Mobile Number</Form.Label>
           <Form.Control
@@ -77,7 +74,6 @@ const Login = () => {
           <Form.Control.Feedback type="invalid">{errors.mobile_number}</Form.Control.Feedback>
         </Form.Group>
 
-        {/* Password Field */}
         <Form.Group className="mb-3" controlId="formPassword">
           <Form.Label>Password</Form.Label>
           <Form.Control
@@ -91,16 +87,10 @@ const Login = () => {
           <Form.Control.Feedback type="invalid">{errors.password}</Form.Control.Feedback>
         </Form.Group>
 
-        {/* Display server error message */}
         {serverError && <Alert variant="danger">{serverError}</Alert>}
-        
-        {/* Display success message */}
         {successMessage && <Alert variant="success">{successMessage}</Alert>}
 
-        {/* Submit Button */}
-        <Button variant="primary" type="submit">
-          Log In
-        </Button>
+        <Button variant="primary" type="submit">Log In</Button>
       </Form>
       <div className="mt-3 text-center">
         <p>Don't have an account? <Link to="/signup">Sign up here</Link>.</p>

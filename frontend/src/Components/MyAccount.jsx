@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
-import { Form, Alert, Container, Spinner, Button, ListGroup, Card, Row, Col, Tabs, Tab } from "react-bootstrap";
+import { Form, Alert, Container, Spinner, Button, ListGroup, Card, Tabs, Tab } from "react-bootstrap";
 import { FaFacebookF, FaWhatsapp, FaTwitter } from "react-icons/fa"; // Import icons
 
 const MyAccount = () => {
@@ -16,13 +16,13 @@ const MyAccount = () => {
       const token = localStorage.getItem("token");
       try {
         // Fetch user data
-        const res = await axios.get("http://localhost:5001/get-user", {
+        const res = await axios.get(`${import.meta.env.VITE_API_URL}/get-user`, {
           headers: { Authorization: `Bearer ${token}` },
         });
         setUser({ ...res.data, wallet: parseFloat(res.data.wallet) });
         
         // Fetch active packages
-        const activePackagesRes = await axios.get("http://localhost:5001/get-active-packages", {
+        const activePackagesRes = await axios.get(`${import.meta.env.VITE_API_URL}/get-active-packages`, {
           headers: { Authorization: `Bearer ${token}` },
         });
         setActivePackages(activePackagesRes.data);
@@ -46,7 +46,7 @@ const MyAccount = () => {
     setSaving(true);
     try {
       const token = localStorage.getItem("token");
-      await axios.put("http://localhost:5001/update-user", user, {
+      await axios.put(`${import.meta.env.VITE_API_URL}/update-user`, user, {
         headers: { Authorization: `Bearer ${token}` },
       });
 
