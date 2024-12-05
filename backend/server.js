@@ -407,7 +407,7 @@ app.get("/get-active-packages", async (req, res) => {
 
     res.json(activePackages.rows);
   } catch (error) {
-    console.error("Failed to fetch active packages:", error);
+    console.error("Failed to fetch active packages:", error) ;
     res.status(500).json({ message: "Failed to fetch active packages" });
   }
 });
